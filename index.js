@@ -1,29 +1,44 @@
 // https://www.mit.edu/~ecprice/wordlist.10000
 // https://www-personal.umich.edu/~jlawler/wordlist
 // https://www.ef.edu/english-resources/english-vocabulary/top-3000-words/
-const fs = require('fs');
+import fs from 'fs';
+import inquirer from 'inquirer';
 const MAX_WORD_LENGTH = 9;
+const GAME_STRING_LENGTH = 19;
 
-// Import Scrabble dictionary.
-let words = fs.readFileSync('dictionary_lowercase.txt', 'utf-8').split('\n');
+let adjList;
+let finalWords = [];
+let helper = [];
+
+let words = fs.readFileSync('scrabble_dictionary_lowercase.txt', 'utf-8').split('\n');
 let wordsMap = {};
 words.map((word) => wordsMap[word] = true);
 
-// Run word search and print results.
-let inputStr = 'eainsreitissluetmtl';
-let rows = createRowsFromInputStr(inputStr);
+// 1. Get game string
+inquirer.prompt([{
+    type: 'input',
+    name: 'gameString',
+    message: 'Input the 19 letters of the grid from left to right, top to bottom:',
+}]).then((answers) => {
+    let inputStr = answers.gameString.replaceAll(' ', '');
+    if (!inputStr || inputStr < GAME_STRING_LENGTH) throw Error;
 
-let adjList = createAdjList(rows);
-let finalWords = [];
-let helper = [];
-for (let i = 0; i < rows.length; i++) {
-    for (let j = 0; j < rows[i].length; j++) {
-        let startNode = rows[i][j];
-        runBFSFrom(startNode, [JSON.stringify(startNode)], startNode.letter, startNode.letterValue);
+    // 2. Run word search.
+    let rows = createRowsFromInputStr(inputStr);
+    adjList = createAdjList(rows);
+    for (let i = 0; i < rows.length; i++) {
+        for (let j = 0; j < rows[i].length; j++) {
+            let startNode = rows[i][j];
+            runBFSFrom(startNode, [JSON.stringify(startNode)], startNode.letter, startNode.letterValue);
+        }
     }
-}
-printFinalWords(finalWords);
-printAsGrid(rows);
+
+    // 3. Print results.
+    printFinalWords(finalWords);
+    printAsGrid(rows);
+}).catch(e => {
+    console.log(e);
+});
 
 function printAsGrid(rows) {
     for (let i = 0; i < rows.length; i++) {
@@ -64,13 +79,13 @@ function printFinalWords(finalWords) {
 
     // Final words: sort by row, pretty print
     let finalRows = [];
-    
+
     for (let word of finalWords) {
         let wordRow = word.start.row;
         if (!finalRows[wordRow]) finalRows[wordRow] = [];
         finalRows[wordRow].push(word);
     }
-    
+
     let rowLengths = finalRows.map(row=>row.length);
     let maxRowLength = Math.max(...rowLengths);
     let seenCoordinates = {};
@@ -85,7 +100,7 @@ function printFinalWords(finalWords) {
                 thisWord.str = thisWord.str.toUpperCase();
                 process.stdout.write((color) ? colorize(thisWord.str) : thisWord.str );
                 process.stdout.write(spaces);
-    
+
                 let wordInfo = `${thisWord.wordValue} pts `;
                 let seenCoordinatesKey = `${thisWord.start.row},${thisWord.start.col}`;
                 if (!seenCoordinates[seenCoordinatesKey]) {
@@ -94,15 +109,15 @@ function printFinalWords(finalWords) {
                 }
                 process.stdout.write(wordInfo);
                 process.stdout.write(Array(17 - wordInfo.length).join(" "));
-    
+
             } else {
                 // print empty string of correct length, hardcode for now
-                process.stdout.write(Array(26).join(" "));
+                process.stdout.write(Array(27).join(" "));
             }
         }
         process.stdout.write('\n');
     }
-    
+
     console.log(finalWords.length)
 }
 
