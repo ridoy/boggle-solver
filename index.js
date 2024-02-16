@@ -5,6 +5,7 @@ import fs from 'fs';
 import inquirer from 'inquirer';
 const MAX_WORD_LENGTH = 9;
 const GAME_STRING_LENGTH = 19;
+const HIGH_WORD_VALUE = 10;
 
 let adjList;
 let finalWords = [];
@@ -94,11 +95,10 @@ function printFinalWords(finalWords) {
         for (let row of finalRows) {
             if (row[i]) {
                 let thisWord = row[i];
-                let color = (thisWord.str.length > 4) ? '\x1b[36m %s\x1b[0m' : '';
                 let numSpaces = MAX_WORD_LENGTH - thisWord.str.length + 2;
                 let spaces = Array(numSpaces).join(" ");
                 thisWord.str = thisWord.str.toUpperCase();
-                process.stdout.write((color) ? colorize(thisWord.str) : thisWord.str );
+                process.stdout.write(colorize(thisWord));
                 process.stdout.write(spaces);
 
                 let wordInfo = `${thisWord.wordValue} pts `;
@@ -122,8 +122,13 @@ function printFinalWords(finalWords) {
 }
 
 // Colorize a string, green by default
-function colorize(str) {
-    return ['\x1b[92m\x1b[1m', str, '\x1b[22m\x1b[0m'].join('');
+function colorize(thisWord) {
+    if (thisWord.wordValue >= HIGH_WORD_VALUE) {
+        return ['\x1b[95m\x1b[1m', thisWord.str, '\x1b[22m\x1b[0m'].join('');
+    } else if (thisWord.str.length > 4) {
+        return ['\x1b[92m\x1b[1m', thisWord.str, '\x1b[22m\x1b[0m'].join('');
+    }
+    return thisWord.str;
 }
 
 function getUserInput() {
